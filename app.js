@@ -1,6 +1,6 @@
 'use strict';
 const app = document.getElementById('app');
-const avatar = '/assets/estrelinha.svg';
+const avatar = './assets/estrelinha.svg';
 const state = { screen: 'inicio', route: '', history: [], breathTimer: null, breathPhase: 0, missionChecks: new Set(), lastFeedback: '', draft: '' };
 const supportive = [
   'Você merece ser tratado com respeito e carinho.',

@@ -43,7 +43,9 @@ const screens = {
   adminLogin: () => shell(`<main class="content">${head('Painel da escola','Acesso exclusivo para a equipe responsável.','Área administrativa')}<form id="admin-login" class="light-panel" style="max-width:500px;margin:auto"><label for="pin"><strong>PIN de acesso</strong></label><input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="off" minlength="6" maxlength="12" required style="width:100%;padding:17px;border:2px solid #a4a8eb;border-radius:16px;margin:13px 0 20px;font-size:20px" placeholder="Digite o PIN"><button class="btn btn-purple full" type="submit">Entrar no painel</button><div id="login-feedback" aria-live="polite"></div></form><p class="info-line">Para o protótipo, veja o PIN no terminal do VS Code onde o servidor está rodando.</p></main>`),
   admin: () => shell(`<main class="content">${head('Painel da escola','Visão geral das interações e mensagens do EmpaTech.','Área restrita')}<div id="admin-content" class="light-panel">Carregando informações...</div><div class="actions"><button class="btn btn-outline" data-action="refresh-admin">Atualizar</button><button class="btn btn-purple" data-action="logout">Sair do painel</button></div><p class="info-line">Indicadores agregados não identificam pessoas ou comprovam, isoladamente, a ocorrência de bullying.</p></main>`)
 };
+
 function clearTimer() { if (state.breathTimer) clearTimeout(state.breathTimer); state.breathTimer = null; }
+
 function go(screen, record=true) {
   if (!screens[screen]) return;
   clearTimer();
@@ -52,43 +54,55 @@ function go(screen, record=true) {
   if (screen==='mural') fetchMural();
   if (screen==='admin') fetchAdmin();
 }
+
+// Mantido apenas para simular o painel de admin, o resto usa dados estáticos
 async function request(path, opts={}) {
   let res;
   try { res=await fetch(path,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...opts}); }
-  catch { throw new Error('Não foi possível conectar ao servidor. Inicie o EmpaTech pelo VS Code usando npm start.'); }
+  catch { throw new Error('Não foi possível conectar ao servidor. No GitHub Pages, isto é apenas uma demonstração visual.'); }
   let data={}; try {data=await res.json();} catch {}
   if (!res.ok) throw new Error(data.error || `Ocorreu um problema (${res.status}).`);
   return data;
 }
+
 async function choose(route) {
   state.route=route;
   state.missionChecks.clear();
-  try { await request('/api/interaction',{method:'POST',body:JSON.stringify({route})}); }
-  catch (e) {console.warn(e.message);}
+  // Simulação: Navega direto sem dar erro de servidor (404)
   go(route==='ajuda'?'ajuda':'ajudar');
 }
+
 function showFeedback(target,msg,type='error') {
   const el=document.getElementById(target);
   if(el) el.innerHTML=`<div class="feedback ${type}">${esc(msg)}</div>`;
 }
+
 async function sendMessage() {
   const area=document.getElementById('letter'); if (!area) return;
   const val=area.value.trim();
   if(val.length<8) return showFeedback('form-feedback','Escreva uma mensagem com pelo menos 8 caracteres.');
-  try {
-    const result=await request('/api/messages',{method:'POST',body:JSON.stringify({text:val})});
-    showFeedback('form-feedback',result.message,'success'); area.value=''; document.getElementById('count').textContent='0/140 caracteres';
-  } catch(e) {showFeedback('form-feedback',e.message);}
+  
+  // Simulação: Mostra mensagem de sucesso sem tentar contactar o servidor
+  showFeedback('form-feedback','Mensagem enviada com sucesso para revisão! 💛','success'); 
+  area.value=''; document.getElementById('count').textContent='0/140 caracteres';
 }
+
 async function fetchMural() {
   const el=document.getElementById('mural-list');
-  try {
-    const data=await request('/api/messages/approved');
-    if(state.screen!=='mural') return;
-    el.innerHTML=data.messages.length?data.messages.map(m=>`<div class="message">💛 ${esc(m.text)}</div>`).join(''):
-      `<div class="message">✨ Você é importante!</div><div class="message">💜 A amizade começa com respeito!</div><p class="kicker">As mensagens enviadas aparecerão aqui depois da aprovação da escola.</p>`;
-  } catch(e) {el.textContent=e.message;}
+  if(state.screen!=='mural') return;
+  
+  // Simulação: Lista fixa de mensagens em vez de ir buscar à base de dados
+  const mensagensDemonstracao = [
+    "Acredite em si mesmo. Um passo de cada vez.",
+    "A gentileza muda o mundo. Espalhe coisas boas!",
+    "Você é especial e a sua presença faz a diferença!",
+    "O respeito é a base de todas as grandes amizades.",
+    "Sua voz e os seus sentimentos importam."
+  ];
+  
+  el.innerHTML=mensagensDemonstracao.map(m=>`<div class="message">💛 ${esc(m)}</div>`).join('');
 }
+
 let breathSteps=[];
 function runBreath() {
   const orb=document.getElementById('breath-orb');const instruction=document.getElementById('breath-instruction');const count=document.getElementById('breath-count'); const btn=document.getElementById('breath-button');
@@ -98,6 +112,7 @@ function runBreath() {
   instruction.textContent=step.text;orb.textContent=step.word;orb.classList.toggle('expand',step.expand);count.textContent=`Ciclo ${step.cycle} de 3`;
   state.breathTimer=setTimeout(runBreath,step.seconds*1000);
 }
+
 function startBreath() {
   clearTimer();breathSteps=[];
   for(let cycle=1;cycle<=3;cycle++) breathSteps.push(
@@ -107,12 +122,14 @@ function startBreath() {
   document.getElementById('breath-button').disabled=true;
   runBreath();
 }
+
 async function moodSelected(id) {
-  try {await request('/api/checkins',{method:'POST',body:JSON.stringify({emotion:id})});}
-  catch(e) {console.warn(e.message);}
+  // Simulação: Vai direto para o próximo ecrã sem dar erro de servidor (404)
   if(id==='preciso-de-ajuda') go('adulto'); else go('final');
 }
+
 function statsLine(name,val,max) {return `<div class="stat-row" style="color:#202658"><span style="min-width:105px">${esc(name)}</span><div class="bar-track"><div class="bar" style="width:${max?Math.round(val/max*100):0}%"></div></div><strong>${val}</strong></div>`;}
+
 async function fetchAdmin() {
   const el=document.getElementById('admin-content'); if(!el) return;
   try {
@@ -128,15 +145,18 @@ async function fetchAdmin() {
       <p class="kicker">Atenção: o filtro automático não garante a detecção de toda mensagem inadequada. Leia cada mensagem antes de aprovar.</p>`;
   } catch(e) {if(e.message.includes('Acesso restrito'))go('adminLogin'); else el.textContent=e.message;}
 }
+
 async function login(form) {
   const pin=String(new FormData(form).get('pin')||'');
   try {await request('/api/admin/login',{method:'POST',body:JSON.stringify({pin})});go('admin');}
   catch(e) {showFeedback('login-feedback',e.message);}
 }
+
 async function review(id,status) {
   try {await request(`/api/admin/messages/${encodeURIComponent(id)}`,{method:'PATCH',body:JSON.stringify({status})});await fetchAdmin();}
   catch(e) {alert(e.message);}
 }
+
 app.addEventListener('click',async e=>{
   const item=e.target.closest('[data-action],[data-go],[data-mood],[data-preset],[data-review]');if(!item)return;
   if(item.dataset.go){go(item.dataset.go);return;}
@@ -155,15 +175,19 @@ app.addEventListener('click',async e=>{
     case 'logout':await request('/api/admin/logout',{method:'POST'});go('inicio');break;
   }
 });
+
 app.addEventListener('input',e=>{
  if(e.target.id==='letter')document.getElementById('count').textContent=`${e.target.value.length}/140 caracteres`;
 });
+
 app.addEventListener('change',e=>{
  if(e.target.dataset.mission!==undefined){const id=Number(e.target.dataset.mission);if(e.target.checked)state.missionChecks.add(id);else state.missionChecks.delete(id);e.target.closest('.mission').classList.toggle('done',e.target.checked);}
 });
+
 app.addEventListener('submit',e=>{
  if(e.target.id==='admin-login'){e.preventDefault();login(e.target);}
 });
+
 // A equipe acessa o painel digitando /#painel na barra de endereço do navegador.
 if(location.hash==='#painel'){go('adminLogin',false);}else go('inicio',false);
 window.addEventListener('hashchange',()=>{if(location.hash==='#painel')go('adminLogin');});
